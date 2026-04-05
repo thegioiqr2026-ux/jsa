@@ -3,45 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VDC - Safety AI (EVN 2026)</title>
+    <title>VDC SAFETY AI - SOL61 v01</title>
     <script type="importmap">
       { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sol61-gradient { background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%); }
+        .result-card { border-left: 4px solid #f97316; }
+    </style>
 </head>
-<body class="bg-slate-50 p-4 min-h-screen">
-    <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
-        <div class="text-center mb-6">
-            <h1 class="text-2xl font-black text-blue-800">VDC SAFETY AI</h1>
-            <p class="text-sm text-gray-500 font-medium">Hệ thống phân tích theo QĐ 278/QĐ-EVN</p>
-        </div>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-4">
+    
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
         
-        <div class="space-y-4">
+        <div class="sol61-gradient p-6 text-white text-center relative">
+            <div class="absolute top-2 right-4 text-[10px] font-mono opacity-70">VERSION: SOL61 v01</div>
+            <h1 class="text-2xl font-black tracking-tight text-white">VDC SAFETY AI</h1>
+            <p class="text-blue-100 text-xs font-medium uppercase tracking-widest mt-1">Quyết định 278/QĐ-EVN 2026</p>
+        </div>
+
+        <div class="p-6 space-y-5">
             <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">GEMINI API KEY:</label>
-                <input type="password" id="apiKey" placeholder="Dán API Key tại đây..." class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Gemini API Key</label>
+                <input type="password" id="apiKey" placeholder="Dán mã bảo mật API..." 
+                    class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition">
             </div>
 
             <div class="relative group">
                 <input type="file" id="imageInput" accept="image/*" capture="camera" class="hidden">
-                <label for="imageInput" class="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl p-8 bg-blue-50 cursor-pointer hover:bg-blue-100 transition">
-                    <span class="text-3xl mb-2">📸</span>
-                    <span class="text-sm font-bold text-blue-700 text-center">Bấm để Chụp ảnh hoặc Chọn hình hiện trường</span>
-                    <img id="preview" class="hidden mt-4 max-h-64 rounded-lg shadow-md border-2 border-white">
+                <label for="imageInput" class="flex flex-col items-center justify-center border-2 border-dashed border-blue-100 rounded-2xl py-8 bg-blue-50/50 cursor-pointer hover:bg-blue-50 transition active:scale-95">
+                    <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-2xl mb-2">📸</div>
+                    <span class="text-sm font-bold text-blue-700">Chụp ảnh hiện trường</span>
+                    <p class="text-[10px] text-gray-500 mt-1 uppercase">Vật tư - Thiết bị - Con người</p>
+                    <img id="preview" class="hidden mt-4 max-h-48 rounded-lg shadow-lg border-2 border-white">
                 </label>
             </div>
 
-            <button id="btnAnalyze" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
-                BẮT ĐẦU PHÂN TÍCH
+            <button id="btnAnalyze" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                <span>PHÂN TÍCH AN TOÀN</span>
             </button>
 
-            <div id="loading" class="hidden flex flex-col items-center py-6">
-                <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-100 border-t-blue-600 mb-2"></div>
-                <p class="text-blue-600 font-bold text-sm animate-pulse">Đang đối chiếu quy trình an toàn EVN...</p>
+            <div id="loading" class="hidden flex flex-col items-center py-4">
+                <div class="w-8 h-8 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                <p class="text-blue-600 font-bold text-[11px] mt-2 animate-pulse">ĐANG ĐỐI CHIẾU QUY TRÌNH...</p>
             </div>
 
-            <div id="result" class="hidden mt-4 p-5 bg-white border border-gray-100 rounded-xl shadow-inner text-gray-800 leading-relaxed overflow-auto max-h-[500px]">
+            <div id="result" class="hidden space-y-4">
+                <div class="result-card bg-orange-50 p-4 rounded-xl shadow-sm">
+                    <h3 class="text-orange-800 font-black text-xs uppercase mb-2 flex items-center gap-1">
+                        <span>⚠️</span> KẾT QUẢ ĐÁNH GIÁ
+                    </h3>
+                    <div id="resultText" class="text-sm text-gray-800 leading-relaxed overflow-auto max-h-80 whitespace-pre-wrap font-medium"></div>
                 </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 text-center border-t border-gray-100">
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Chief of Safety Training - VDC Brand</p>
         </div>
     </div>
 
@@ -52,10 +71,11 @@
         const imgInput = document.getElementById('imageInput');
         const preview = document.getElementById('preview');
         const resultDiv = document.getElementById('result');
+        const resultText = document.getElementById('resultText');
         const loading = document.getElementById('loading');
 
-        // Tự động khôi phục Key nếu đã nhập trước đó
-        if(localStorage.getItem('vdc_key')) document.getElementById('apiKey').value = localStorage.getItem('vdc_key');
+        // Restore API Key
+        if(localStorage.getItem('vdc_api_key')) document.getElementById('apiKey').value = localStorage.getItem('vdc_api_key');
 
         imgInput.onchange = e => {
             const file = e.target.files[0];
@@ -70,18 +90,18 @@
             const file = imgInput.files[0];
             
             if (!key || !file) {
-                alert("Vui lòng nhập API Key và chọn hình ảnh!");
+                alert("Vui lòng nhập API Key và chụp ảnh hiện trường!");
                 return;
             }
 
-            localStorage.setItem('vdc_key', key);
+            localStorage.setItem('vdc_api_key', key);
             loading.classList.remove('hidden');
             resultDiv.classList.add('hidden');
-            btn.disabled = true;
+            btn.classList.add('opacity-50', 'pointer-events-none');
 
             try {
                 const genAI = new GoogleGenerativeAI(key);
-                // SỬA LỖI 404: Dùng tên model chính xác cho v1beta
+                // Sửa lỗi 404 bằng cách dùng model định danh mới nhất
                 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
                 const reader = new FileReader();
@@ -89,13 +109,14 @@
                 reader.onloadend = async () => {
                     const base64Data = reader.result.split(',')[1];
                     
-                    const prompt = `Bạn là một chuyên gia An toàn điện cấp cao của EVN. Hãy phân tích hình ảnh này dựa trên Quyết định 278/QĐ-EVN năm 2026.
-                    Yêu cầu kết quả bao gồm:
-                    1. Nhận diện bối cảnh và thiết bị (ĐDK, Trạm, người lao động...).
-                    2. Các mối nguy hiện hữu và vi phạm (Khoảng cách an toàn theo Điều 33, PTBVCN, biển báo...).
-                    3. Đánh giá mức độ rủi ro (Thấp/Trung bình/Cao).
-                    4. Các biện pháp an toàn cụ thể cần thực hiện ngay theo đúng quy trình kỹ thuật.
-                    Trình bày chuyên nghiệp, dùng các gạch đầu dòng rõ ràng.`;
+                    const prompt = `Bạn là Chuyên gia An toàn Điện EVN (SOL61 v01). 
+                    Dựa trên Quyết định 278/QĐ-EVN năm 2026, hãy phân tích ảnh hiện trường này và trình bày theo đúng cấu trúc:
+                    1. NHẬN DIỆN: (Thiết bị, cấp điện áp ước lượng, hành vi người lao động).
+                    2. MỐI NGUY & VI PHẠM: (Soi lỗi theo Điều 33 về khoảng cách an toàn, Điều 45 về nối đất, trang bị BHLD...).
+                    3. ĐÁNH GIÁ RỦI RO: (Thấp/Trung bình/Cao/Đặc biệt nguy hiểm).
+                    4. BIỆN PHÁP CỤ THỂ: (Ghi rõ cần làm gì ngay lập tức để đảm bảo an toàn).
+                    
+                    Lưu ý: Ngôn ngữ quyết đoán, chuyên nghiệp của ngành điện Việt Nam.`;
 
                     const result = await model.generateContent([
                         prompt,
@@ -103,16 +124,15 @@
                     ]);
                     
                     const response = await result.response;
-                    // Chuyển Markdown đơn giản sang xuống dòng HTML
-                    resultDiv.innerHTML = response.text().replace(/\n/g, '<br>');
+                    resultText.innerHTML = response.text().replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
                     resultDiv.classList.remove('hidden');
                     loading.classList.add('hidden');
-                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
                 };
             } catch (e) {
-                alert("Lỗi hệ thống: " + e.message);
+                alert("Lỗi: " + e.message);
                 loading.classList.add('hidden');
-                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'pointer-events-none');
             }
         };
     </script>
