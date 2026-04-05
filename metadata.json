@@ -1,0 +1,5 @@
+{
+  "name": "EVN Safety AI - Chuyên gia An toàn Điện",
+  "description": "Ứng dụng phân tích an toàn điện hiện trường dựa trên Quyết định 278/QĐ-EVN sử dụng AI.",
+  "requestFramePermissions": ["camera"]
+}
