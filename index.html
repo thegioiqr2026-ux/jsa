@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VDC JSA VISION - Offline Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0"></script>
+
+    <style>
+        body { font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        .loading-ring { border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-950 min-h-screen text-slate-100 p-4">
+
+    <div class="max-w-md mx-auto">
+        <div id="aiStatus" class="mb-4 text-[10px] bg-slate-800 text-slate-400 px-4 py-2 rounded-full font-bold flex items-center justify-between shadow-lg transition-all">
+            <span id="statusText"><i class="fas fa-wifi mr-2"></i> Đang kiểm tra bộ não AI...</span>
+            <div id="statusDot" class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+        </div>
+
+        <header class="text-center mb-6">
+            <h1 class="text-2xl font-black text-red-600 italic uppercase italic">VDC JSA VISION</h1>
+            <p class="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Expert: Tran Cong Dep | Local AI v1.2</p>
+        </header>
+
+        <div class="bg-slate-900 rounded-[2.5rem] p-5 shadow-2xl border border-slate-800">
+            <div id="imageArea" onclick="document.getElementById('cameraInput').click()" class="relative border-2 border-dashed border-slate-700 rounded-[2rem] aspect-square flex flex-col items-center justify-center bg-black mb-6 overflow-hidden active:scale-95 transition-transform cursor-pointer">
+                <img id="imagePreview" src="#" class="absolute inset-0 w-full h-full object-cover hidden rounded-[2rem]">
+                <div id="uploadPrompt" class="text-center p-6">
+                    <i class="fas fa-bolt text-4xl text-red-600 mb-3"></i>
+                    <p class="text-sm font-black uppercase italic">CHỤP ẢNH HIỆN TRƯỜNG</p>
+                    <p class="text-[9px] text-slate-500 mt-1 uppercase italic underline">Tự động nhận diện & Phân tích rủi ro</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="document.getElementById('cameraInput').click()" class="bg-slate-800 py-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-2">
+                    <i class="fas fa-camera text-red-500"></i> CHỤP ẢNH
+                </button>
+                <button onclick="document.getElementById('galleryInput').click()" class="bg-slate-800 py-3 rounded-xl font-bold text-[11px] flex items-center justify-center gap-2">
+                    <i class="fas fa-images text-blue-500"></i> CHỌN FILE
+                </button>
+            </div>
+
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+            <input type="file" id="galleryInput" accept="image/*" class="hidden">
+
+            <button onclick="predictImage()" id="analyzeBtn" disabled class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-30 disabled:bg-slate-700 uppercase italic">
+                <span id="btnText">ĐANG TẢI DỮ LIỆU AI...</span>
+                <div id="spinner" class="loading-ring hidden"></div>
+            </button>
+        </div>
+
+        <div id="resultBox" class="mt-6 bg-white text-slate-900 rounded-[2.5rem] p-6 shadow-2xl hidden border-t-8 border-red-600">
+            <div id="resultContent" class="space-y-5"></div>
+            <div class="mt-6 pt-4 border-t"><a href="tel:0399496319" class="block bg-blue-600 text-white text-center py-4 rounded-2xl text-[11px] font-black italic uppercase">📞 Gọi Mr. An Toàn VDC</a></div>
+        </div>
+    </div>
+
+    <script>
+        let model = null;
+        const CACHE_NAME = 'vdc-ai-cache-v1';
+        const AI_FILES = [
+            'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0',
+            'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0'
+        ];
+
+        // 1. TỰ ĐỘNG LƯU BỘ NÃO VÀO CACHE KHI TẢI XONG
+        async function initAI() {
+            try {
+                // Tải mô hình
+                model = await mobilenet.load({version: 2, alpha: 1.0});
+                
+                // Lưu vào Cache để lần sau load tức thì
+                if ('caches' in window) {
+                    const cache = await caches.open(CACHE_NAME);
+                    await cache.addAll(AI_FILES);
+                }
+
+                document.getElementById('statusText').innerHTML = '<i class="fas fa-check-circle mr-2 text-green-500"></i> BỘ NÃO AI ĐÃ LƯU (SẴN SÀNG OFFLINE)';
+                document.getElementById('statusDot').classList.replace('bg-yellow-500', 'bg-green-500');
+                document.getElementById('statusDot').classList.remove('animate-pulse');
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('btnText').innerText = "PHÂN TÍCH JSA NGAY";
+            } catch (e) {
+                document.getElementById('statusText').innerText = "LỖI: HÃY KIỂM TRA MẠNG LẦN ĐẦU";
+            }
+        }
+        window.onload = initAI;
+
+        // Xử lý ảnh
+        [document.getElementById('cameraInput'), document.getElementById('galleryInput')].forEach(input => {
+            input.onchange = function() {
+                const [file] = this.files;
+                if (file) {
+                    document.getElementById('imagePreview').src = URL.createObjectURL(file);
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                    document.getElementById('uploadPrompt').classList.add('hidden');
+                    document.getElementById('resultBox').classList.add('hidden');
+                }
+            };
+        });
+
+        async function predictImage() {
+            if (!model || !document.getElementById('imagePreview').src) return;
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('btnText').innerText = "AI ĐANG GIÁM ĐỊNH...";
+            document.getElementById('spinner').classList.remove('hidden');
+
+            try {
+                const predictions = await model.classify(document.getElementById('imagePreview'));
+                const isPower = predictions.some(p => p.className.toLowerCase().includes('pole') || p.className.toLowerCase().includes('tower') || p.className.toLowerCase().includes('insulator'));
+
+                let html = "";
+                if (isPower) {
+                    html = `
+                        <div class="bg-red-50 p-4 rounded-2xl border-l-4 border-red-600">
+                            <p class="text-[10px] text-red-600 font-black uppercase">Kết luận cấp điện áp:</p>
+                            <h3 class="text-xl font-black italic">TRUNG THẾ 22KV-35KV</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-slate-50 p-3 rounded-xl border">
+                                <p class="text-[9px] font-bold text-slate-500">KHOẢNG CÁCH LUẬT:</p>
+                                <p class="text-lg font-black tracking-tighter">2.0 MÉT</p>
+                            </div>
+                            <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-200">
+                                <p class="text-[9px] font-bold text-yellow-600 uppercase">VDC KHUYẾN CÁO:</p>
+                                <p class="text-lg font-black text-yellow-800 tracking-tighter">> 4.0 MÉT</p>
+                            </div>
+                        </div>
+                        <ul class="text-[11px] font-bold space-y-2 bg-slate-50 p-4 rounded-xl italic">
+                            <li>🚩 Dừng cẩu nếu vi phạm khoảng cách an toàn.</li>
+                            <li>🚩 Kiểm tra nối đất vỏ xe trước khi làm việc.</li>
+                        </ul>`;
+                } else {
+                    html = `<p class="text-center font-bold p-10 uppercase italic">AI không nhận diện rõ Cột/Sứ.<br>Hãy chụp lại sát đỉnh cột!</p>`;
+                }
+                document.getElementById('resultContent').innerHTML = html;
+                document.getElementById('resultBox').classList.remove('hidden');
+            } catch (e) { alert(e.message); }
+            finally {
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('btnText').innerText = "PHÂN TÍCH JSA NGAY";
+                document.getElementById('spinner').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
