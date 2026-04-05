@@ -1,13 +1,53 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVN Safety AI - VDC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+      { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
+    </script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-6">
+        <h2 class="text-xl font-bold text-blue-700 mb-4">EVN SAFETY AI (QĐ 278)</h2>
+        <input type="password" id="apiKey" placeholder="Dán Gemini API Key" class="w-full p-2 border rounded mb-4">
+        <input type="file" id="imgInput" accept="image/*" capture="camera" class="mb-4 w-full">
+        <button id="btnRun" class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold">PHÂN TÍCH HIỆN TRƯỜNG</button>
+        <div id="out" class="mt-6 text-sm text-gray-700 whitespace-pre-wrap border-t pt-4 hidden"></div>
+    </div>
 
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        const btn = document.getElementById('btnRun');
+        btn.onclick = async () => {
+            const key = document.getElementById('apiKey').value;
+            const file = document.getElementById('imgInput').files[0];
+            if(!key || !file) return alert("Thiếu Key hoặc Ảnh");
+            
+            btn.innerText = "Đang phân tích...";
+            btn.disabled = true;
+
+            const genAI = new GoogleGenerativeAI(key);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = async () => {
+                const base64 = reader.result.split(',')[1];
+                try {
+                    const res = await model.generateContent([
+                        "Bạn là chuyên gia an toàn điện EVN. Dựa trên QĐ 278/QĐ-EVN 2026, hãy phân tích ảnh này: 1.Mối nguy, 2.Rủi ro, 3.Biện pháp.",
+                        { inlineData: { data: base64, mimeType: "image/jpeg" } }
+                    ]);
+                    document.getElementById('out').innerText = res.response.text();
+                    document.getElementById('out').classList.remove('hidden');
+                } catch (e) { alert("Lỗi: " + e.message); }
+                btn.innerText = "PHÂN TÍCH HIỆN TRƯỜNG";
+                btn.disabled = false;
+            };
+        };
+    </script>
+</body>
+</html>
