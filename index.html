@@ -3,50 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVN Safety AI - VDC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>VDC - Safety AI (EVN 2026)</title>
     <script type="importmap">
       { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-4">
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-6">
-        <h2 class="text-xl font-bold text-blue-700 mb-4">EVN SAFETY AI (QĐ 278)</h2>
-        <input type="password" id="apiKey" placeholder="Dán Gemini API Key" class="w-full p-2 border rounded mb-4">
-        <input type="file" id="imgInput" accept="image/*" capture="camera" class="mb-4 w-full">
-        <button id="btnRun" class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold">PHÂN TÍCH HIỆN TRƯỜNG</button>
-        <div id="out" class="mt-6 text-sm text-gray-700 whitespace-pre-wrap border-t pt-4 hidden"></div>
+<body class="bg-slate-50 p-4 min-h-screen">
+    <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-black text-blue-800">VDC SAFETY AI</h1>
+            <p class="text-sm text-gray-500 font-medium">Hệ thống phân tích theo QĐ 278/QĐ-EVN</p>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">GEMINI API KEY:</label>
+                <input type="password" id="apiKey" placeholder="Dán API Key tại đây..." class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition">
+            </div>
+
+            <div class="relative group">
+                <input type="file" id="imageInput" accept="image/*" capture="camera" class="hidden">
+                <label for="imageInput" class="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-2xl p-8 bg-blue-50 cursor-pointer hover:bg-blue-100 transition">
+                    <span class="text-3xl mb-2">📸</span>
+                    <span class="text-sm font-bold text-blue-700 text-center">Bấm để Chụp ảnh hoặc Chọn hình hiện trường</span>
+                    <img id="preview" class="hidden mt-4 max-h-64 rounded-lg shadow-md border-2 border-white">
+                </label>
+            </div>
+
+            <button id="btnAnalyze" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
+                BẮT ĐẦU PHÂN TÍCH
+            </button>
+
+            <div id="loading" class="hidden flex flex-col items-center py-6">
+                <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-100 border-t-blue-600 mb-2"></div>
+                <p class="text-blue-600 font-bold text-sm animate-pulse">Đang đối chiếu quy trình an toàn EVN...</p>
+            </div>
+
+            <div id="result" class="hidden mt-4 p-5 bg-white border border-gray-100 rounded-xl shadow-inner text-gray-800 leading-relaxed overflow-auto max-h-[500px]">
+                </div>
+        </div>
     </div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "@google/generative-ai";
-        const btn = document.getElementById('btnRun');
+
+        const btn = document.getElementById('btnAnalyze');
+        const imgInput = document.getElementById('imageInput');
+        const preview = document.getElementById('preview');
+        const resultDiv = document.getElementById('result');
+        const loading = document.getElementById('loading');
+
+        // Tự động khôi phục Key nếu đã nhập trước đó
+        if(localStorage.getItem('vdc_key')) document.getElementById('apiKey').value = localStorage.getItem('vdc_key');
+
+        imgInput.onchange = e => {
+            const file = e.target.files[0];
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.classList.remove('hidden');
+            }
+        };
+
         btn.onclick = async () => {
             const key = document.getElementById('apiKey').value;
-            const file = document.getElementById('imgInput').files[0];
-            if(!key || !file) return alert("Thiếu Key hoặc Ảnh");
+            const file = imgInput.files[0];
             
-            btn.innerText = "Đang phân tích...";
+            if (!key || !file) {
+                alert("Vui lòng nhập API Key và chọn hình ảnh!");
+                return;
+            }
+
+            localStorage.setItem('vdc_key', key);
+            loading.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
             btn.disabled = true;
 
-            const genAI = new GoogleGenerativeAI(key);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onloadend = async () => {
-                const base64 = reader.result.split(',')[1];
-                try {
-                    const res = await model.generateContent([
-                        "Bạn là chuyên gia an toàn điện EVN. Dựa trên QĐ 278/QĐ-EVN 2026, hãy phân tích ảnh này: 1.Mối nguy, 2.Rủi ro, 3.Biện pháp.",
-                        { inlineData: { data: base64, mimeType: "image/jpeg" } }
+            try {
+                const genAI = new GoogleGenerativeAI(key);
+                // SỬA LỖI 404: Dùng tên model chính xác cho v1beta
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onloadend = async () => {
+                    const base64Data = reader.result.split(',')[1];
+                    
+                    const prompt = `Bạn là một chuyên gia An toàn điện cấp cao của EVN. Hãy phân tích hình ảnh này dựa trên Quyết định 278/QĐ-EVN năm 2026.
+                    Yêu cầu kết quả bao gồm:
+                    1. Nhận diện bối cảnh và thiết bị (ĐDK, Trạm, người lao động...).
+                    2. Các mối nguy hiện hữu và vi phạm (Khoảng cách an toàn theo Điều 33, PTBVCN, biển báo...).
+                    3. Đánh giá mức độ rủi ro (Thấp/Trung bình/Cao).
+                    4. Các biện pháp an toàn cụ thể cần thực hiện ngay theo đúng quy trình kỹ thuật.
+                    Trình bày chuyên nghiệp, dùng các gạch đầu dòng rõ ràng.`;
+
+                    const result = await model.generateContent([
+                        prompt,
+                        { inlineData: { data: base64Data, mimeType: file.type } }
                     ]);
-                    document.getElementById('out').innerText = res.response.text();
-                    document.getElementById('out').classList.remove('hidden');
-                } catch (e) { alert("Lỗi: " + e.message); }
-                btn.innerText = "PHÂN TÍCH HIỆN TRƯỜNG";
+                    
+                    const response = await result.response;
+                    // Chuyển Markdown đơn giản sang xuống dòng HTML
+                    resultDiv.innerHTML = response.text().replace(/\n/g, '<br>');
+                    resultDiv.classList.remove('hidden');
+                    loading.classList.add('hidden');
+                    btn.disabled = false;
+                };
+            } catch (e) {
+                alert("Lỗi hệ thống: " + e.message);
+                loading.classList.add('hidden');
                 btn.disabled = false;
-            };
+            }
         };
     </script>
 </body>
