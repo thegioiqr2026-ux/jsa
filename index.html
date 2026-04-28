@@ -4,126 +4,116 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VDC SAFETY AI - FAST</title>
+  <title>VDC SAFETY AI v5.2</title>
   <style>
     :root { --primary: #1a73e8; --danger: #d93025; --warning: #f9ab00; --success: #1e8e3e; --bg: #f8f9fa; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #3c4043; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #3c4043; }
     .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    h2 { color: var(--primary); text-align: center; margin: 0 0 10px 0; }
-    .upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; background: #fafafa; }
-    #preview { max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 10px; display: none; margin-left: auto; margin-right: auto; }
-    button { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 16px; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
-    .status { margin-top: 20px; display: none; text-align: center; color: var(--primary); font-weight: bold; }
-    #resultBox { margin-top: 20px; display: none; border-top: 2px solid #f0f0f0; padding-top: 15px; }
+    h2 { color: var(--primary); text-align: center; margin: 0; }
+    .ver-info { text-align: center; font-size: 11px; color: #9aa0a6; margin-bottom: 20px; }
+    .upload-area { border: 2px dashed #ccc; padding: 25px; text-align: center; border-radius: 10px; cursor: pointer; background: #fafafa; transition: 0.3s; }
+    .upload-area:hover { border-color: var(--primary); }
+    #preview { max-width: 100%; max-height: 300px; border-radius: 8px; margin-top: 15px; display: none; margin-left: auto; margin-right: auto; }
+    button { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 16px; }
+    button:disabled { background: #ccc; }
+    .loading-status { margin-top: 20px; display: none; text-align: center; color: var(--primary); font-weight: 600; }
+    #resultBox { margin-top: 25px; display: none; border-top: 2px solid #f0f0f0; padding-top: 15px; }
     .badge { padding: 6px 12px; border-radius: 5px; font-size: 14px; font-weight: bold; color: white; display: inline-block; margin-bottom: 10px; }
     .danger-Cao { background: var(--danger); }
     .danger-Trung { background: var(--warning); }
     .danger-Thấp { background: var(--success); }
-    ul { padding-left: 20px; margin: 5px 0 15px 0; font-size: 15px; }
-    li { margin-bottom: 5px; }
+    .section-title { font-weight: bold; margin-top: 10px; border-left: 4px solid var(--primary); padding-left: 10px; }
+    ul { padding-left: 25px; margin: 8px 0; }
+    li { margin-bottom: 6px; line-height: 1.4; }
+    .footer { text-align: right; font-size: 10px; color: #bbb; margin-top: 20px; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h2>VDC SAFETY AI</h2>
+  <div class="ver-info">AI Risk Analysis & Prevention</div>
   
   <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-    <span id="uploadText">📸 Chụp ảnh hoặc chọn hình</span>
-    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)">
+    <span id="uploadText">📸 Chụp ảnh hoặc chọn hình ảnh hiện trường</span>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="processImage(this)">
     <img id="preview">
   </div>
 
-  <button id="btnAnalyze" onclick="startAnalysis()" disabled>PHÂN TÍCH NGAY</button>
+  <button id="btnRun" onclick="runAI()" disabled>PHÂN TÍCH RỦI RO</button>
 
-  <div id="statusArea" class="status">
-    <div>🚀 Đang xử lý siêu tốc...</div>
-  </div>
+  <div id="statusArea" class="loading-status">🚀 AI đang quét mối nguy (v5.2)...</div>
 
   <div id="resultBox">
     <div id="dangerBadge" class="badge"></div>
-    <div style="font-weight:bold">⚠️ Mối nguy:</div>
+    <div class="section-title">⚠️ Rủi ro phát hiện:</div>
     <ul id="risksList"></ul>
-    <div style="font-weight:bold">✅ Giải pháp:</div>
+    <div class="section-title">✅ Biện pháp an toàn:</div>
     <ul id="measuresList"></ul>
   </div>
+  
+  <div class="footer">Version 5.2 | VDC Safety Pro</div>
 </div>
 
 <script>
-  let optimizedBase64 = "";
+  let finalBase64 = "";
 
-  // Hàm xử lý và nén ảnh để tăng tốc
-  function handleFile(input) {
+  function processImage(input) {
     const file = input.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function(e) {
       const img = new Image();
       img.onload = function() {
-        // Nén ảnh bằng Canvas
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Giới hạn ảnh tối đa 800px để AI xử lý nhanh mà vẫn rõ
-        const MAX_SIZE = 800;
-        if (width > height) {
-          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-        } else {
-          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
+        let width = img.width, height = img.height;
+        const MAX = 850;
+        if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } 
+        else { if (height > MAX) { width *= MAX / height; height = MAX; } }
+        canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        
-        // Chuyển sang base64 với chất lượng 0.7 (giảm 70% dung lượng)
-        optimizedBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-        
-        // Hiển thị preview
+        finalBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
         const previewImg = document.getElementById('preview');
         previewImg.src = canvas.toDataURL('image/jpeg');
         previewImg.style.display = 'block';
         document.getElementById('uploadText').style.display = 'none';
-        document.getElementById('btnAnalyze').disabled = false;
+        document.getElementById('btnRun').disabled = false;
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
 
-  function startAnalysis() {
+  function runAI() {
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('statusArea').style.display = 'block';
-    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('btnRun').disabled = true;
 
     google.script.run
-      .withSuccessHandler(showResult)
-      .withFailureHandler(showError)
-      .analyzeSafetyRisk(optimizedBase64);
+      .withSuccessHandler(doneAI)
+      .withFailureHandler(failAI)
+      .analyzeSafetyRisk(finalBase64);
   }
 
-  function showResult(res) {
+  function doneAI(res) {
     document.getElementById('statusArea').style.display = 'none';
-    document.getElementById('btnAnalyze').disabled = false;
-    if (res.error) return alert("Lỗi: " + res.error);
+    document.getElementById('btnRun').disabled = false;
+    if (res.error) return alert(res.error);
 
     const badge = document.getElementById('dangerBadge');
-    badge.innerText = "Mức độ: " + res.danger_level;
+    badge.innerText = "Mức độ rủi ro: " + res.danger_level;
     badge.className = "badge danger-" + (res.danger_level.includes("Cao") ? "Cao" : (res.danger_level.includes("Trung") ? "Trung" : "Thấp"));
-
-    document.getElementById('risksList').innerHTML = res.risks.map(i => `<li>${i}</li>`).join('');
-    document.getElementById('measuresList').innerHTML = res.measures.map(i => `<li>${i}</li>`).join('');
+    document.getElementById('risksList').innerHTML = res.risks.map(r => `<li>${r}</li>`).join('');
+    document.getElementById('measuresList').innerHTML = res.measures.map(m => `<li>${m}</li>`).join('');
     document.getElementById('resultBox').style.display = 'block';
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }
 
-  function showError(err) {
+  function failAI(err) {
     document.getElementById('statusArea').style.display = 'none';
-    document.getElementById('btnAnalyze').disabled = false;
-    alert("Lỗi kết nối: " + err.message);
+    document.getElementById('btnRun').disabled = false;
+    alert("Lỗi: " + err.message);
   }
 </script>
 </body>
