@@ -4,141 +4,127 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VDC SAFETY - AI ANALYZER</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <title>VDC SAFETY AI - FAST</title>
   <style>
-    :root {
-      --primary: #1a73e8;
-      --danger: #d93025;
-      --warning: #f9ab00;
-      --success: #1e8e3e;
-      --bg: #f8f9fa;
-    }
-    body { font-family: 'Roboto', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #3c4043; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    h2 { color: var(--primary); text-align: center; margin-top: 0; }
-    .upload-area { border: 2px dashed #dadce0; padding: 30px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-    .upload-area:hover { border-color: var(--primary); background: #f1f3f4; }
-    #preview { max-width: 100%; border-radius: 8px; margin-top: 15px; display: none; }
-    button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 16px; transition: 0.3s; }
-    button:disabled { background: #bdc1c6; }
-    .status { margin-top: 20px; display: none; text-align: center; }
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: inline-block; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    
-    /* Result Styling */
-    #resultBox { margin-top: 25px; display: none; border-top: 2px solid #eee; padding-top: 20px; }
-    .badge { padding: 5px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; color: white; display: inline-block; margin-bottom: 10px; }
+    :root { --primary: #1a73e8; --danger: #d93025; --warning: #f9ab00; --success: #1e8e3e; --bg: #f8f9fa; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #3c4043; }
+    .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    h2 { color: var(--primary); text-align: center; margin: 0 0 10px 0; }
+    .upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; background: #fafafa; }
+    #preview { max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 10px; display: none; margin-left: auto; margin-right: auto; }
+    button { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 16px; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .status { margin-top: 20px; display: none; text-align: center; color: var(--primary); font-weight: bold; }
+    #resultBox { margin-top: 20px; display: none; border-top: 2px solid #f0f0f0; padding-top: 15px; }
+    .badge { padding: 6px 12px; border-radius: 5px; font-size: 14px; font-weight: bold; color: white; display: inline-block; margin-bottom: 10px; }
     .danger-Cao { background: var(--danger); }
     .danger-Trung { background: var(--warning); }
     .danger-Thấp { background: var(--success); }
-    .list-title { font-weight: bold; margin: 10px 0 5px; display: flex; align-items: center; }
-    .list-title i { margin-right: 8px; }
-    ul { padding-left: 20px; margin: 0; }
-    li { margin-bottom: 8px; line-height: 1.4; }
+    ul { padding-left: 20px; margin: 5px 0 15px 0; font-size: 15px; }
+    li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h2>VDC SAFETY AI</h2>
-  <p style="text-align:center; font-size: 14px;">Phân tích mối nguy & Đề xuất biện pháp an toàn</p>
-
+  
   <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-    <p id="uploadText">Chạm để chụp ảnh hoặc chọn tệp</p>
-    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="previewImage(this)">
+    <span id="uploadText">📸 Chụp ảnh hoặc chọn hình</span>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)">
     <img id="preview">
   </div>
 
-  <button id="btnAnalyze" onclick="startAnalysis()" disabled>BẮT ĐẦU PHÂN TÍCH</button>
+  <button id="btnAnalyze" onclick="startAnalysis()" disabled>PHÂN TÍCH NGAY</button>
 
   <div id="statusArea" class="status">
-    <div class="loader"></div>
-    <p id="statusText">AI đang quét dữ liệu hình ảnh...</p>
+    <div>🚀 Đang xử lý siêu tốc...</div>
   </div>
 
   <div id="resultBox">
     <div id="dangerBadge" class="badge"></div>
-    
-    <div class="list-title">⚠️ Rủi ro tiềm ẩn:</div>
+    <div style="font-weight:bold">⚠️ Mối nguy:</div>
     <ul id="risksList"></ul>
-    
-    <div class="list-title">✅ Biện pháp đề xuất:</div>
+    <div style="font-weight:bold">✅ Giải pháp:</div>
     <ul id="measuresList"></ul>
   </div>
 </div>
 
 <script>
-  let base64Data = "";
+  let optimizedBase64 = "";
 
-  function previewImage(input) {
+  // Hàm xử lý và nén ảnh để tăng tốc
+  function handleFile(input) {
     const file = input.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = document.getElementById('preview');
-        img.src = e.target.result;
-        img.style.display = 'block';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        // Nén ảnh bằng Canvas
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Giới hạn ảnh tối đa 800px để AI xử lý nhanh mà vẫn rõ
+        const MAX_SIZE = 800;
+        if (width > height) {
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Chuyển sang base64 với chất lượng 0.7 (giảm 70% dung lượng)
+        optimizedBase64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+        
+        // Hiển thị preview
+        const previewImg = document.getElementById('preview');
+        previewImg.src = canvas.toDataURL('image/jpeg');
+        previewImg.style.display = 'block';
         document.getElementById('uploadText').style.display = 'none';
         document.getElementById('btnAnalyze').disabled = false;
-        
-        // Chuyển sang base64 để chuẩn bị gửi
-        base64Data = e.target.result.split(',')[1];
       };
-      reader.readAsDataURL(file);
-    }
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 
   function startAnalysis() {
-    if (!base64Data) return;
-
-    // Reset giao diện
     document.getElementById('resultBox').style.display = 'none';
     document.getElementById('statusArea').style.display = 'block';
     document.getElementById('btnAnalyze').disabled = true;
 
-    // Gọi hàm analyzeSafetyRisk từ file .gs
     google.script.run
       .withSuccessHandler(showResult)
       .withFailureHandler(showError)
-      .analyzeSafetyRisk(base64Data);
+      .analyzeSafetyRisk(optimizedBase64);
   }
 
   function showResult(res) {
     document.getElementById('statusArea').style.display = 'none';
     document.getElementById('btnAnalyze').disabled = false;
+    if (res.error) return alert("Lỗi: " + res.error);
 
-    if (res.error) {
-      alert("Lỗi: " + res.error);
-      return;
-    }
-
-    // Hiển thị kết quả
-    const resBox = document.getElementById('resultBox');
     const badge = document.getElementById('dangerBadge');
-    const riskList = document.getElementById('risksList');
-    const measureList = document.getElementById('measuresList');
-
-    // Mức độ nguy hiểm
     badge.innerText = "Mức độ: " + res.danger_level;
     badge.className = "badge danger-" + (res.danger_level.includes("Cao") ? "Cao" : (res.danger_level.includes("Trung") ? "Trung" : "Thấp"));
 
-    // Rủi ro
-    riskList.innerHTML = res.risks.map(item => `<li>${item}</li>`).join('');
-    
-    // Biện pháp
-    measureList.innerHTML = res.measures.map(item => `<li>${item}</li>`).join('');
-
-    resBox.style.display = 'block';
-    resBox.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('risksList').innerHTML = res.risks.map(i => `<li>${i}</li>`).join('');
+    document.getElementById('measuresList').innerHTML = res.measures.map(i => `<li>${i}</li>`).join('');
+    document.getElementById('resultBox').style.display = 'block';
   }
 
   function showError(err) {
     document.getElementById('statusArea').style.display = 'none';
     document.getElementById('btnAnalyze').disabled = false;
-    alert("Lỗi hệ thống: " + err.message);
+    alert("Lỗi kết nối: " + err.message);
   }
 </script>
-
 </body>
 </html>
